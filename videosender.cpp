@@ -135,9 +135,21 @@ void VideoSender::setIpAddr( QString ipAddr ){
         return;
     }
 
+    QSettings settings;
+    settings.setValue( "network/udp-host", ipAddr );
 
+    std::string strHost = ipAddr.toStdString();
+    g_object_set( udpsink, "host", strHost.c_str(), nullptr );
 }
 
 void VideoSender::setPort( int port ){
+    GstElement* udpsink = gst_bin_get_by_name( GST_BIN( m_pipeline ), "udpsink" );
+    if( !udpsink ){
+        LOG4CXX_ERROR( logger, "Unable to get udpsink from pipeline" );
+        return;
+    }
 
+    QSettings settings;
+    settings.setValue( "network/udp-port", 8230 );
+    g_object_set( udpsink, "port", port, nullptr );
 }
