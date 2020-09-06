@@ -58,7 +58,7 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
         videoFramerate = settings.value( "video/framerate", 24 ).toInt();
         pt = settings.value( "video/pt", 96 ).toInt();
         udpHost = settings.value( "network/udp-host" ).toString();
-        udpPort = settings.value( "network/udp-port", 2310 ).toInt();
+        udpPort = settings.value( "network/udp-port", 8230 ).toInt();
     }
 
     GstElement* v4l2Src = gst_element_factory_make( "v4l2src", "v4l2src" );
@@ -81,7 +81,7 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
         LOG4CXX_ERROR( logger, "Unable to create rtph264pay" );
         error = true;
     }
-    GstElement* udpsink = gst_element_factory_make( "udpsink", nullptr );
+    GstElement* udpsink = gst_element_factory_make( "udpsink", "udpsink" );
     if( !udpsink ){
         LOG4CXX_ERROR( logger, "Unable to create udpsink" );
         error = true;
@@ -98,8 +98,15 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
             NULL);
     g_object_set(G_OBJECT(capsfilter), "caps", caps, NULL);
 
-    g_object_set( rtph264pay, "config-interval", configInterval );
-    g_object_set( rtph264pay, "pt", pt );
+    g_object_set( rtph264pay, "config-interval", configInterval, nullptr );
+    g_object_set( rtph264pay, "pt", pt, nullptr );
+
+    g_object_set( udpsink, "sync", false, nullptr );
+    {
+        std::string strHost = udpHost.toStdString();
+        g_object_set( udpsink, "host", strHost.c_str(), nullptr );
+    }
+    g_object_set( udpsink, "port", udpPort, nullptr );
 
     gst_bin_add_many(GST_BIN (m_pipeline), v4l2Src, capsfilter, h264parse, rtph264pay, udpsink, NULL);
     gst_element_link_many( v4l2Src, capsfilter, h264parse, rtph264pay, udpsink, NULL);
@@ -119,4 +126,18 @@ void VideoSender::startVideo(){
 
 void VideoSender::stopVideo(){
     gst_element_set_state (m_pipeline, GST_STATE_NULL);
+}
+
+void VideoSender::setIpAddr( QString ipAddr ){
+    GstElement* udpsink = gst_bin_get_by_name( GST_BIN( m_pipeline ), "udpsink" );
+    if( !udpsink ){
+        LOG4CXX_ERROR( logger, "Unable to get udpsink from pipeline" );
+        return;
+    }
+
+
+}
+
+void VideoSender::setPort( int port ){
+
 }

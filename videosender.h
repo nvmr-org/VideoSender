@@ -11,6 +11,9 @@ public:
     explicit VideoSender(QObject *parent = nullptr);
     ~VideoSender();
 
+    void setIpAddr( QString ipAddr );
+    void setPort( int port );
+
 signals:
 
 public slots:
