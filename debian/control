@@ -7,6 +7,7 @@ Build-Depends: debhelper (>= 11),
                libgstreamer1.0-dev,
                liblog4cxx-dev,
                libqt5websockets5-dev,
+               libnvmr-json-dev,
                qt5-default
 Standards-Version: 4.1.3
 Homepage: <insert the upstream URL, if relevant>
