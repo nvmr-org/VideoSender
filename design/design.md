@@ -16,18 +16,30 @@ Configuration parameters:
 * ip-port: the port to send the video to
 
 Communication:
-* Listen on port 9036 for connections
+* Listen on port 9036 for websocket connections
 * send JSON data back and forth
 
 JSON data:
 ```
 {
+  command: "query", // Optional, command to do.  currently only thing defined is 'query' to return settings.
   configuration: {
-    video-id:5,
-    video-name:foobar,
     device-uuid:555-90123, // <-- Can only be received from device, cannot be set
-    ip-dest:224.1.2.9,
-    ip-port:8230
+
+    video: {
+      id:5,
+      name:foobar,
+      width:1280,
+      height:800,
+      config-interval:96,
+      pt:1,
+      framerate:24
+    },
+
+    network: {
+      udp-host:224.1.2.9,
+      udp-port:8230
+    }
   }
 }
 ```

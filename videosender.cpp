@@ -135,9 +135,6 @@ void VideoSender::setIpAddr( QString ipAddr ){
         return;
     }
 
-    QSettings settings;
-    settings.setValue( "network/udp-host", ipAddr );
-
     std::string strHost = ipAddr.toStdString();
     g_object_set( udpsink, "host", strHost.c_str(), nullptr );
 }
@@ -149,7 +146,5 @@ void VideoSender::setPort( int port ){
         return;
     }
 
-    QSettings settings;
-    settings.setValue( "network/udp-port", 8230 );
     g_object_set( udpsink, "port", port, nullptr );
 }

@@ -11,6 +11,7 @@
 #include <gst/gst.h>
 
 #include "videosender.h"
+#include "configurationserver.h"
 
 static log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger( "org.nvmr.nvmrvideosender" );
 
@@ -51,6 +52,9 @@ int main(int argc, char *argv[])
 
     VideoSender send;
     QTimer::singleShot( 0, &send, &VideoSender::startVideo );
+
+    ConfigurationServer srv;
+    srv.setVideoSender( &send );
 
     return a.exec();
 }
