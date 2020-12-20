@@ -15,10 +15,10 @@ public:
 
     void setVideoSender( VideoSender* vidsend );
 
-signals:
+Q_SIGNALS:
 
-public slots:
-private slots:
+public Q_SLOTS:
+private Q_SLOTS:
     void onNewConnection();
     void processBinaryMessage(QByteArray message);
     void socketDisconnected();

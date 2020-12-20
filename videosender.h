@@ -14,9 +14,9 @@ public:
     void setIpAddr( QString ipAddr );
     void setPort( int port );
 
-signals:
+Q_SIGNALS:
 
-public slots:
+public Q_SLOTS:
     void startVideo();
     void stopVideo();
 
