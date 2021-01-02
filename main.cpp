@@ -73,9 +73,10 @@ int main(int argc, char *argv[])
     gst_init( nullptr, nullptr );
 
     // Generate UUID if one does not exist
+    QUuid uuid;
     {
         QSettings settings;
-        QUuid uuid = settings.value( "device-uuid", QUuid() ).toUuid();
+        uuid = settings.value( "device-uuid", QUuid() ).toUuid();
         if( uuid.isNull() ){
             uuid = QUuid::createUuid();
             LOG4CXX_DEBUG( logger, "Creating UUID of " << uuid.toString().toStdString() );
@@ -90,6 +91,7 @@ int main(int argc, char *argv[])
     srv.setVideoSender( &send );
 
     AvahiControl avahi;
+    avahi.setUuid( uuid );
     QTimer::singleShot( 0, &avahi, &AvahiControl::registerWithAvahi );
 
     return a.exec();

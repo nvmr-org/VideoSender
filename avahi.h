@@ -2,6 +2,7 @@
 #define AVAHI_H
 
 #include <QObject>
+#include <QUuid>
 
 #include <dbus-cxx-qt.h>
 
@@ -14,6 +15,8 @@ class AvahiControl : public QObject
 public:
     explicit AvahiControl(QObject *parent = nullptr);
 
+    void setUuid( QUuid uuid );
+
 Q_SIGNALS:
 
 public Q_SLOTS:
@@ -25,6 +28,7 @@ private:
     std::shared_ptr<DBus::Dispatcher> m_dispatcher;
     std::shared_ptr<Avahi::ServerProxy> m_avahiServer;
     std::shared_ptr<Avahi::EntryGroupProxy> m_entryProxy;
+    QUuid m_uuid;
 };
 
 #endif // AVAHI_H

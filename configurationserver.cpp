@@ -42,6 +42,10 @@ void ConfigurationServer::processBinaryMessage( QByteArray message ){
         return;
     }
 
+    if( logger->isDebugEnabled() ){
+        std::string debugDoc = doc.toJson().toStdString();
+        LOG4CXX_DEBUG( logger, "Got document: " << debugDoc );
+    }
 
     QSettings settings;
 
