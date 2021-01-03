@@ -20,7 +20,7 @@ Q_SIGNALS:
 public Q_SLOTS:
 private Q_SLOTS:
     void onNewConnection();
-    void processBinaryMessage(QByteArray message);
+    void processBinaryMessage(const QByteArray& message);
     void socketDisconnected();
 
 private:

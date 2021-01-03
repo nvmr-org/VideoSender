@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     a.setOrganizationName( "NVMR" );
 
     initialize_logging();
-    DBus::setLoggingFunction( dbuscxx_logger_callback );
+    DBus::set_logging_function( dbuscxx_logger_callback );
 
     LOG4CXX_INFO( logger, "NVMR Video Sender starting up" );
 

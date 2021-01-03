@@ -35,7 +35,7 @@ void ConfigurationServer::onNewConnection()
     m_clients.push_back( pSocket );
 }
 
-void ConfigurationServer::processBinaryMessage( QByteArray message ){
+void ConfigurationServer::processBinaryMessage( const QByteArray& message ){
     QJsonDocument doc = QJsonDocument::fromJson( message );
     if( doc.isNull() ){
         LOG4CXX_ERROR( logger, "Docment is null!" );
@@ -50,6 +50,10 @@ void ConfigurationServer::processBinaryMessage( QByteArray message ){
     QSettings settings;
 
     VideoSenderMessage msg( doc.object() );
+
+    if( msg.command() == "query" ){
+        // Send the data back
+    }
 
     //VideoSettings vidset = msg.configuration().videoSettings();
 
