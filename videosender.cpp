@@ -42,20 +42,17 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
 {
     m_pipeline = gst_pipeline_new( "pipeline" );
     bool error = false;
-    int videoWidth;
-    int videoHeight;
     int configInterval;
     int pt;
     QString udpHost;
     int udpPort;
-    int videoFramerate;
 
     {
         QSettings settings;
-        videoWidth = settings.value( "video/width", 1280 ).toInt();
-        videoHeight = settings.value( "video/height", 720 ).toInt();
-        configInterval = settings.value( "video/convig-interval", 96 ).toInt();
-        videoFramerate = settings.value( "video/framerate", 24 ).toInt();
+        m_width = settings.value( "video/width", 1280 ).toInt();
+        m_height = settings.value( "video/height", 720 ).toInt();
+        configInterval = settings.value( "video/config-interval", 96 ).toInt();
+        m_framerate = settings.value( "video/framerate", 24 ).toInt();
         pt = settings.value( "video/pt", 96 ).toInt();
         udpHost = settings.value( "network/udp-host" ).toString();
         udpPort = settings.value( "network/udp-port", 8230 ).toInt();
@@ -66,7 +63,7 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
         LOG4CXX_ERROR( logger, "Unable to create v4l2src" );
         error = true;
     }
-    GstElement* capsfilter = gst_element_factory_make( "capsfilter", nullptr );
+    GstElement* capsfilter = gst_element_factory_make( "capsfilter", "capsfilter" );
     if( !capsfilter ){
         LOG4CXX_ERROR( logger, "Unable to create capsfilter" );
         error = true;
@@ -76,7 +73,7 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
         LOG4CXX_ERROR( logger, "Unable to create h264parse" );
         error = true;
     }
-    GstElement* rtph264pay = gst_element_factory_make( "rtph264pay", nullptr );
+    GstElement* rtph264pay = gst_element_factory_make( "rtph264pay", "rtph264pay" );
     if( !rtph264pay ){
         LOG4CXX_ERROR( logger, "Unable to create rtph264pay" );
         error = true;
@@ -92,9 +89,9 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
     }
 
     GstCaps* caps = gst_caps_new_simple("video/x-h264",
-            "framerate", GST_TYPE_FRACTION, videoFramerate, 1,
-            "width", G_TYPE_INT, videoWidth,
-            "height", G_TYPE_INT, videoHeight,
+            "framerate", GST_TYPE_FRACTION, m_framerate, 1,
+            "width", G_TYPE_INT, m_width,
+            "height", G_TYPE_INT, m_height,
             NULL);
     g_object_set(G_OBJECT(capsfilter), "caps", caps, NULL);
 
@@ -147,4 +144,75 @@ void VideoSender::setPort( int port ){
     }
 
     g_object_set( udpsink, "port", port, nullptr );
+}
+
+int VideoSender::videoWidth() const {
+    return m_width;
+}
+
+int VideoSender::videoHeight() const {
+    return m_height;
+}
+
+void VideoSender::configureCaps() {
+    GstElement* capsfilter = gst_bin_get_by_name( GST_BIN( m_pipeline ), "capsfilter" );
+
+    GstCaps* caps = gst_caps_new_simple("video/x-h264",
+            "framerate", GST_TYPE_FRACTION, m_framerate, 1,
+            "width", G_TYPE_INT, m_width,
+            "height", G_TYPE_INT, m_height,
+            NULL);
+    g_object_set(G_OBJECT(capsfilter), "caps", caps, NULL);
+}
+
+int VideoSender::configInterval() const {
+    GstElement* rtph264pay = gst_bin_get_by_name( GST_BIN( m_pipeline ), "rtph264pay" );
+    if( !rtph264pay ){
+        LOG4CXX_ERROR( logger, "Unable to get rtph264pay from pipeline" );
+        return -1;
+    }
+
+    int value;
+    g_object_get( G_OBJECT(rtph264pay), "config-interval", &value, nullptr );
+    return value;
+}
+
+int VideoSender::framerate() const{
+    return m_framerate;
+}
+
+int VideoSender::pt() const {
+    GstElement* rtph264pay = gst_bin_get_by_name( GST_BIN( m_pipeline ), "rtph264pay" );
+    if( !rtph264pay ){
+        LOG4CXX_ERROR( logger, "Unable to get rtph264pay from pipeline" );
+        return -1;
+    }
+
+    int value;
+    g_object_get( G_OBJECT(rtph264pay), "pt", &value, nullptr );
+    return value;
+}
+
+QString VideoSender::ipAddr() const{
+    GstElement* udpsink = gst_bin_get_by_name( GST_BIN( m_pipeline ), "udpsink" );
+    if( !udpsink ){
+        LOG4CXX_ERROR( logger, "Unable to get udpsink from pipeline" );
+        return "";
+    }
+
+    char* ipAddr = nullptr;
+    g_object_get( G_OBJECT(udpsink), "host", &ipAddr, nullptr );
+    return QString::fromUtf8( ipAddr );
+}
+
+int VideoSender::port() const{
+    GstElement* udpsink = gst_bin_get_by_name( GST_BIN( m_pipeline ), "udpsink" );
+    if( !udpsink ){
+        LOG4CXX_ERROR( logger, "Unable to get udpsink from pipeline" );
+        return 0;
+    }
+
+    int port;
+    g_object_get( G_OBJECT(udpsink), "port", &port, nullptr );
+    return port;
 }

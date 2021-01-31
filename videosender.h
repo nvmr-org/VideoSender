@@ -14,6 +14,14 @@ public:
     void setIpAddr( QString ipAddr );
     void setPort( int port );
 
+    int videoWidth() const;
+    int videoHeight() const;
+    int configInterval() const;
+    int framerate() const;
+    int pt() const;
+    QString ipAddr() const;
+    int port() const;
+
 Q_SIGNALS:
 
 public Q_SLOTS:
@@ -21,7 +29,14 @@ public Q_SLOTS:
     void stopVideo();
 
 private:
+    void configureCaps();
+
+private:
     GstElement* m_pipeline;
+
+    int m_width;
+    int m_height;
+    int m_framerate;
 };
 
 #endif // VIDEOSENDER_H

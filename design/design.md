@@ -22,7 +22,7 @@ Communication:
 JSON data:
 ```
 {
-  command: "query", // Optional, command to do.  currently only thing defined is 'query' to return settings.
+  command: "query", // Optional, command to do.
   configuration: {
     device-uuid:555-90123, // <-- Can only be received from device, cannot be set
 
@@ -43,3 +43,8 @@ JSON data:
   }
 }
 ```
+
+Available commands:
+* query - query the current vidoe settings
+* restart - restart this video sender application(exit with code 2)
+* set - Update the current settings with the new settings that we are giving now

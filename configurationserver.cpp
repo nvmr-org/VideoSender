@@ -1,5 +1,6 @@
 #include <log4cxx/logger.h>
 #include <QByteArray>
+#include <QCoreApplication>
 
 #include "configurationserver.h"
 #include "videosender.h"
@@ -53,6 +54,48 @@ void ConfigurationServer::processBinaryMessage( const QByteArray& message ){
 
     if( msg.command() == "query" ){
         // Send the data back
+        for( QWebSocket* socket : m_clients ){
+            VideoSenderMessage retmsg;
+
+            QSettings settings;
+            VideoSenderConfiguration& config = retmsg.mutuable_configuration();
+            config.setUuid( settings.value( "device-uuid" ).toUuid().toString( QUuid::StringFormat::WithoutBraces ) );
+            VideoSettings& vidSettings = config.mutable_videoSettings();
+            NetworkSettings& netSettings = config.mutable_networkSettings();
+
+            vidSettings.setWidth( m_videoSender->videoWidth() );
+            vidSettings.setHeight( m_videoSender->videoHeight() );
+            vidSettings.setConfigInterval( m_videoSender->configInterval() );
+            vidSettings.setFramerate( m_videoSender->framerate() );
+            vidSettings.setPt( m_videoSender->pt() );
+            vidSettings.setId( settings.value( "video/id", -1 ).toInt() );
+            vidSettings.setName( settings.value( "video/name" ).toString() );
+
+            netSettings.setUdpHost( m_videoSender->ipAddr() );
+            netSettings.setUdpPort( m_videoSender->port() );
+
+            QJsonDocument doc( retmsg.jsonObj() );
+            socket->sendBinaryMessage( doc.toJson() );
+        }
+    }else if( msg.command() == "restart" ){
+        for( QWebSocket* socket : m_clients ){
+            socket->close();
+        }
+        QTimer::singleShot( 100, [](){
+            QCoreApplication::instance()->exit( 2 );
+        });
+    }else if( msg.command() == "set" ){
+        QSettings settings;
+
+        settings.setValue( "video/width", msg.configuration().videoSettings().width() );
+        settings.setValue( "video/height", msg.configuration().videoSettings().height() );
+        settings.setValue( "video/config-interval", msg.configuration().videoSettings().configInterval() );
+        settings.setValue( "video/framerate", msg.configuration().videoSettings().framerate() );
+        settings.setValue( "video/pt", msg.configuration().videoSettings().pt() );
+        settings.setValue( "video/id", msg.configuration().videoSettings().id() );
+        settings.setValue( "video/name", msg.configuration().videoSettings().name() );
+        settings.setValue( "network/udp-host", msg.configuration().networkSettings().udpHost() );
+        settings.setValue( "network/udp-port", msg.configuration().networkSettings().udpPort() );
     }
 
     //VideoSettings vidset = msg.configuration().videoSettings();
