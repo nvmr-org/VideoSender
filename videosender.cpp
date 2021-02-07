@@ -88,13 +88,6 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
         return;
     }
 
-    GstCaps* caps = gst_caps_new_simple("video/x-h264",
-            "framerate", GST_TYPE_FRACTION, m_framerate, 1,
-            "width", G_TYPE_INT, m_width,
-            "height", G_TYPE_INT, m_height,
-            NULL);
-    g_object_set(G_OBJECT(capsfilter), "caps", caps, NULL);
-
     g_object_set( rtph264pay, "config-interval", configInterval, nullptr );
     g_object_set( rtph264pay, "pt", pt, nullptr );
 
@@ -104,9 +97,21 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
         g_object_set( udpsink, "host", strHost.c_str(), nullptr );
     }
     g_object_set( udpsink, "port", udpPort, nullptr );
+    g_object_set( udpsink, "auto-multicast", true, nullptr );
 
-    gst_bin_add_many(GST_BIN (m_pipeline), v4l2Src, capsfilter, h264parse, rtph264pay, udpsink, NULL);
+    GstElement* fake = gst_element_factory_make( "fakesink", nullptr );
+
+    gst_bin_add_many(GST_BIN (m_pipeline), v4l2Src, capsfilter, h264parse, rtph264pay, udpsink, fake, NULL);
     gst_element_link_many( v4l2Src, capsfilter, h264parse, rtph264pay, udpsink, NULL);
+
+    LOG4CXX_DEBUG( logger, "framerate: " << m_framerate << " width: " << m_width << " height: " << m_height );
+    GstCaps* caps = gst_caps_new_simple("video/x-h264",
+            "framerate", GST_TYPE_FRACTION, m_framerate, 1,
+            "width", G_TYPE_INT, m_width,
+            "height", G_TYPE_INT, m_height,
+            NULL);
+    g_object_set(G_OBJECT(capsfilter), "caps", caps, NULL);
+    gst_caps_unref( caps );
 
     GstBus* bus = gst_pipeline_get_bus (GST_PIPELINE (m_pipeline));
     guint bus_watch_id = gst_bus_add_watch (bus, my_bus_callback, NULL);
