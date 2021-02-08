@@ -28,6 +28,7 @@ my_bus_callback (GstBus * bus, GstMessage * message, gpointer data)
       break;
     default:
       /* unhandled message */
+      //LOG4CXX_DEBUG( logger, "Message type " << GST_MESSAGE_TYPE(message) );
       break;
   }
 
@@ -51,7 +52,7 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
         QSettings settings;
         m_width = settings.value( "video/width", 1280 ).toInt();
         m_height = settings.value( "video/height", 720 ).toInt();
-        configInterval = settings.value( "video/config-interval", 96 ).toInt();
+        configInterval = settings.value( "video/config-interval", 1 ).toInt();
         m_framerate = settings.value( "video/framerate", 24 ).toInt();
         pt = settings.value( "video/pt", 96 ).toInt();
         udpHost = settings.value( "network/udp-host" ).toString();
@@ -66,11 +67,6 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
     GstElement* capsfilter = gst_element_factory_make( "capsfilter", "capsfilter" );
     if( !capsfilter ){
         LOG4CXX_ERROR( logger, "Unable to create capsfilter" );
-        error = true;
-    }
-    GstElement* h264parse = gst_element_factory_make( "h264parse", nullptr );
-    if( !h264parse ){
-        LOG4CXX_ERROR( logger, "Unable to create h264parse" );
         error = true;
     }
     GstElement* rtph264pay = gst_element_factory_make( "rtph264pay", "rtph264pay" );
@@ -99,10 +95,8 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
     g_object_set( udpsink, "port", udpPort, nullptr );
     g_object_set( udpsink, "auto-multicast", true, nullptr );
 
-    GstElement* fake = gst_element_factory_make( "fakesink", nullptr );
-
-    gst_bin_add_many(GST_BIN (m_pipeline), v4l2Src, capsfilter, h264parse, rtph264pay, udpsink, fake, NULL);
-    gst_element_link_many( v4l2Src, capsfilter, h264parse, rtph264pay, udpsink, NULL);
+    gst_bin_add_many(GST_BIN (m_pipeline), v4l2Src, capsfilter, rtph264pay, udpsink, NULL);
+    gst_element_link_many( v4l2Src, capsfilter, rtph264pay, udpsink, NULL);
 
     LOG4CXX_DEBUG( logger, "framerate: " << m_framerate << " width: " << m_width << " height: " << m_height );
     GstCaps* caps = gst_caps_new_simple("video/x-h264",
@@ -123,10 +117,23 @@ VideoSender::~VideoSender(){
 }
 
 void VideoSender::startVideo(){
+    GstElement* udpsink = gst_bin_get_by_name( GST_BIN( m_pipeline ), "udpsink" );
+    if( !udpsink ){
+        LOG4CXX_ERROR( logger, "Unable to get udpsink from pipeline" );
+        return;
+    }
+
+    char* host = nullptr;
+    int port = 0;
+
+    g_object_get( udpsink, "host", &host, nullptr );
+    g_object_get( udpsink, "port", &port, nullptr );
+    LOG4CXX_DEBUG( logger, "Starting video " << host << ":" << port );
     gst_element_set_state (m_pipeline, GST_STATE_PLAYING);
 }
 
 void VideoSender::stopVideo(){
+    LOG4CXX_DEBUG( logger, "Stopping video" );
     gst_element_set_state (m_pipeline, GST_STATE_NULL);
 }
 
