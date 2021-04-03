@@ -29,7 +29,7 @@ void AvahiControl::registerWithAvahi(){
     std::string serviceName( "VideoSender-" );
     serviceName.append( m_uuid.toString( QUuid::StringFormat::WithoutBraces ).toStdString() );
     m_entryProxy->getorg_freedesktop_Avahi_EntryGroupInterface()
-            ->AddService( -1, 0, 0, serviceName, "_nvmr_video_sender._tcp", std::string(), std::string(), 9036, txtData );
+            ->AddService( -1, -1, 0, serviceName, "_nvmr_video_sender._tcp", std::string(), std::string(), 9036, txtData );
 
     m_entryProxy->getorg_freedesktop_Avahi_EntryGroupInterface()
             ->Commit();

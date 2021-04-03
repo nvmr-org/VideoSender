@@ -30,6 +30,7 @@ void ConfigurationServer::onNewConnection()
 {
     QWebSocket *pSocket = m_server->nextPendingConnection();
 
+    LOG4CXX_DEBUG( logger, "New incoming connection from " << pSocket->peerAddress().toString().toStdString() );
     connect(pSocket, &QWebSocket::binaryMessageReceived, this, &ConfigurationServer::processBinaryMessage);
     connect(pSocket, &QWebSocket::disconnected, this, &ConfigurationServer::socketDisconnected);
 
