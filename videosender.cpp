@@ -47,6 +47,7 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
     int pt;
     QString udpHost;
     int udpPort;
+    bool broadcast;
 
     {
         QSettings settings;
@@ -57,6 +58,7 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
         pt = settings.value( "video/pt", 96 ).toInt();
         udpHost = settings.value( "network/udp-host" ).toString();
         udpPort = settings.value( "network/udp-port", 8230 ).toInt();
+        broadcast = settings.value( "network/broadcast" ).toBool();
     }
 
     GstElement* v4l2Src = gst_element_factory_make( "v4l2src", "v4l2src" );
@@ -74,6 +76,19 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
         LOG4CXX_ERROR( logger, "Unable to create rtph264pay" );
         error = true;
     }
+
+    GstElement* tee = gst_element_factory_make( "tee", "tee" );
+    if( !tee ){
+        LOG4CXX_ERROR( logger, "Unable to create tee" );
+        error = true;
+    }
+
+    GstElement* fakesink = gst_element_factory_make( "fakesink", NULL );
+    if( !fakesink){
+        LOG4CXX_ERROR( logger, "Unable to create fakesink" );
+        error = true;
+    }
+
     GstElement* udpsink = gst_element_factory_make( "udpsink", "udpsink" );
     if( !udpsink ){
         LOG4CXX_ERROR( logger, "Unable to create udpsink" );
@@ -95,7 +110,7 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
     g_object_set( udpsink, "port", udpPort, nullptr );
     g_object_set( udpsink, "auto-multicast", true, nullptr );
 
-    gst_bin_add_many(GST_BIN (m_pipeline), v4l2Src, capsfilter, rtph264pay, udpsink, NULL);
+    gst_bin_add_many(GST_BIN (m_pipeline), v4l2Src, capsfilter, rtph264pay, tee, fakesink, udpsink, NULL);
     gst_element_link_many( v4l2Src, capsfilter, rtph264pay, udpsink, NULL);
 
     LOG4CXX_DEBUG( logger, "framerate: " << m_framerate << " width: " << m_width << " height: " << m_height );

@@ -30,6 +30,7 @@ public Q_SLOTS:
 
 private:
     void configureCaps();
+    void configureBroadcast();
 
 private:
     GstElement* m_pipeline;

@@ -74,6 +74,7 @@ void ConfigurationServer::processBinaryMessage( const QByteArray& message ){
 
             netSettings.setUdpHost( m_videoSender->ipAddr() );
             netSettings.setUdpPort( m_videoSender->port() );
+            netSettings.setBroadcast( settings.value( "network/broadcast" ).toBool() );
 
             QJsonDocument doc( retmsg.jsonObj() );
             socket->sendBinaryMessage( doc.toJson() );
@@ -97,6 +98,7 @@ void ConfigurationServer::processBinaryMessage( const QByteArray& message ){
         settings.setValue( "video/name", msg.configuration().videoSettings().name() );
         settings.setValue( "network/udp-host", msg.configuration().networkSettings().udpHost() );
         settings.setValue( "network/udp-port", msg.configuration().networkSettings().udpPort() );
+        settings.setValue( "network/broadcast", msg.configuration().networkSettings().broadcast() );
     }
 
     //VideoSettings vidset = msg.configuration().videoSettings();
