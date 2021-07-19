@@ -8,6 +8,12 @@ set(CMAKE_AUTOUIC ON)
 add_compile_definitions(QT_NO_KEYWORDS)
 
 include(GNUInstallDirs)
+
+if( CMAKE_CROSSCOMPILING )
+set(QT_MOC_EXECUTABLE /usr/bin/moc)
+add_executable(Qt5::moc IMPORTED)
+set_property(TARGET Qt5::moc PROPERTY IMPORTED_LOCATION ${QT_MOC_EXECUTABLE})
+endif( CMAKE_CROSSCOMPILING )
 find_package(Qt5 COMPONENTS Core WebSockets REQUIRED)
 
 set( headers
@@ -42,6 +48,7 @@ pkg_check_modules( dbus-cxx REQUIRED dbus-cxx-qt-2.0 )
 add_executable( NVMRVideoSender ${headers} ${sources} )
 target_link_libraries( NVMRVideoSender
     Qt5::Core
+    Qt5::WebSockets
     ${gstreamer_LIBRARIES}
     ${log4cxx_LIBRARIES}
     ${nvmr-json_LIBRARIES}
@@ -52,4 +59,11 @@ target_include_directories( NVMRVideoSender PRIVATE
     ${log4cxx_INCLUDE_DIRS}
     ${nvmr-json_INCLUDE_DIRS}
     ${dbus-cxx_INCLUDE_DIRS}
+)
+
+#
+# install information
+#
+install( TARGETS NVMRVideoSender
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
