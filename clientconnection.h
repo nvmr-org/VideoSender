@@ -26,8 +26,13 @@ public Q_SLOTS:
     void socketDisconnected();
 
 private:
+    void stopSendingVideo();
+
+private:
     QWebSocket* m_socket;
     VideoSender* m_videoSender;
+    bool m_isSendingVideo;
+    int m_sendingPort;
 };
 
 #endif // CLIENTCONNECTION_H

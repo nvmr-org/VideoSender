@@ -14,7 +14,8 @@ ClientConnection::ClientConnection(QWebSocket* socket,
                                    QObject *parent) :
     QObject(parent),
     m_socket( socket ),
-    m_videoSender( vidSend )
+    m_videoSender( vidSend ),
+    m_isSendingVideo( false )
 {
     connect( m_socket, &QWebSocket::disconnected,
              this, &ClientConnection::clientDisconnected );
@@ -87,12 +88,24 @@ void ClientConnection::processBinaryMessage(const QByteArray& message){
         settings.setValue( "network/udp-port", msg.configuration().networkSettings().udpPort() );
         settings.setValue( "network/broadcast", msg.configuration().networkSettings().broadcast() );
     }else if( msg.command() == "send-video" ){
-        m_videoSender->addEndpoint( m_socket->peerAddress(), 5555 );
+        stopSendingVideo();
+        m_sendingPort = msg.streaminformation().port();
+        m_videoSender->addEndpoint( m_socket->peerAddress(), m_sendingPort );
+        m_isSendingVideo = true;
     }else if( msg.command() == "stop-video" ){
-        m_videoSender->removeEndpoint( m_socket->peerAddress(), 5555 );
+        stopSendingVideo();
     }
 }
 
 void ClientConnection::socketDisconnected(){
-    m_videoSender->removeEndpoint( m_socket->peerAddress(), 5555 );
+    stopSendingVideo();
+}
+
+void ClientConnection::stopSendingVideo(){
+    if( !m_isSendingVideo ){
+        return;
+    }
+
+    m_isSendingVideo = false;
+    m_videoSender->removeEndpoint( m_socket->peerAddress(), m_sendingPort );
 }
