@@ -2,6 +2,7 @@
 #define VIDEOSENDER_H
 
 #include <QObject>
+#include <QHostAddress>
 #include <gst/gst.h>
 
 class VideoSender : public QObject
@@ -11,16 +12,14 @@ public:
     explicit VideoSender(QObject *parent = nullptr);
     ~VideoSender();
 
-    void setIpAddr( QString ipAddr );
-    void setPort( int port );
-
     int videoWidth() const;
     int videoHeight() const;
     int configInterval() const;
     int framerate() const;
     int pt() const;
-    QString ipAddr() const;
-    int port() const;
+
+    void addEndpoint( QHostAddress addr, int port );
+    void removeEndpoint( QHostAddress addr, int port );
 
 Q_SIGNALS:
 
@@ -31,6 +30,7 @@ public Q_SLOTS:
 private:
     void configureCaps();
     void configureBroadcast();
+    QString nameForAddressAndPort( QHostAddress addr, int port );
 
 private:
     GstElement* m_pipeline;

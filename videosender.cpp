@@ -25,6 +25,7 @@ my_bus_callback (GstBus * bus, GstMessage * message, gpointer data)
     case GST_MESSAGE_EOS:
       /* end-of-stream */
       //g_main_loop_quit (loop);
+      LOG4CXX_DEBUG( logger, "End of stream" );
       break;
     default:
       /* unhandled message */
@@ -45,9 +46,6 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
     bool error = false;
     int configInterval;
     int pt;
-    QString udpHost;
-    int udpPort;
-    bool broadcast;
 
     {
         QSettings settings;
@@ -56,9 +54,6 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
         configInterval = settings.value( "video/config-interval", 1 ).toInt();
         m_framerate = settings.value( "video/framerate", 24 ).toInt();
         pt = settings.value( "video/pt", 96 ).toInt();
-        udpHost = settings.value( "network/udp-host" ).toString();
-        udpPort = settings.value( "network/udp-port", 8230 ).toInt();
-        broadcast = settings.value( "network/broadcast" ).toBool();
     }
 
     GstElement* v4l2Src = gst_element_factory_make( "v4l2src", "v4l2src" );
@@ -89,12 +84,6 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
         error = true;
     }
 
-    GstElement* udpsink = gst_element_factory_make( "udpsink", "udpsink" );
-    if( !udpsink ){
-        LOG4CXX_ERROR( logger, "Unable to create udpsink" );
-        error = true;
-    }
-
     if( error ){
         return;
     }
@@ -102,16 +91,9 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
     g_object_set( rtph264pay, "config-interval", configInterval, nullptr );
     g_object_set( rtph264pay, "pt", pt, nullptr );
 
-    g_object_set( udpsink, "sync", false, nullptr );
-    {
-        std::string strHost = udpHost.toStdString();
-        g_object_set( udpsink, "host", strHost.c_str(), nullptr );
-    }
-    g_object_set( udpsink, "port", udpPort, nullptr );
-    g_object_set( udpsink, "auto-multicast", true, nullptr );
-
-    gst_bin_add_many(GST_BIN (m_pipeline), v4l2Src, capsfilter, rtph264pay, tee, fakesink, udpsink, NULL);
-    gst_element_link_many( v4l2Src, capsfilter, rtph264pay, udpsink, NULL);
+    gst_bin_add_many(GST_BIN (m_pipeline), v4l2Src, capsfilter, rtph264pay, tee, fakesink, nullptr);
+    gst_element_link_many( v4l2Src, capsfilter, rtph264pay, tee, nullptr);
+    gst_element_link_many( tee, fakesink, nullptr );
 
     LOG4CXX_DEBUG( logger, "framerate: " << m_framerate << " width: " << m_width << " height: " << m_height );
     GstCaps* caps = gst_caps_new_simple("video/x-h264",
@@ -132,45 +114,13 @@ VideoSender::~VideoSender(){
 }
 
 void VideoSender::startVideo(){
-    GstElement* udpsink = gst_bin_get_by_name( GST_BIN( m_pipeline ), "udpsink" );
-    if( !udpsink ){
-        LOG4CXX_ERROR( logger, "Unable to get udpsink from pipeline" );
-        return;
-    }
-
-    char* host = nullptr;
-    int port = 0;
-
-    g_object_get( udpsink, "host", &host, nullptr );
-    g_object_get( udpsink, "port", &port, nullptr );
-    LOG4CXX_DEBUG( logger, "Starting video " << host << ":" << port );
+    LOG4CXX_DEBUG( logger, "Starting video" );
     gst_element_set_state (m_pipeline, GST_STATE_PLAYING);
 }
 
 void VideoSender::stopVideo(){
     LOG4CXX_DEBUG( logger, "Stopping video" );
     gst_element_set_state (m_pipeline, GST_STATE_NULL);
-}
-
-void VideoSender::setIpAddr( QString ipAddr ){
-    GstElement* udpsink = gst_bin_get_by_name( GST_BIN( m_pipeline ), "udpsink" );
-    if( !udpsink ){
-        LOG4CXX_ERROR( logger, "Unable to get udpsink from pipeline" );
-        return;
-    }
-
-    std::string strHost = ipAddr.toStdString();
-    g_object_set( udpsink, "host", strHost.c_str(), nullptr );
-}
-
-void VideoSender::setPort( int port ){
-    GstElement* udpsink = gst_bin_get_by_name( GST_BIN( m_pipeline ), "udpsink" );
-    if( !udpsink ){
-        LOG4CXX_ERROR( logger, "Unable to get udpsink from pipeline" );
-        return;
-    }
-
-    g_object_set( udpsink, "port", port, nullptr );
 }
 
 int VideoSender::videoWidth() const {
@@ -220,26 +170,57 @@ int VideoSender::pt() const {
     return value;
 }
 
-QString VideoSender::ipAddr() const{
-    GstElement* udpsink = gst_bin_get_by_name( GST_BIN( m_pipeline ), "udpsink" );
+void VideoSender::addEndpoint( QHostAddress addr, int port ){
+    LOG4CXX_DEBUG( logger, "Sending video to " << addr.toString().toStdString() << ":" << port );
+    QString sinkName = nameForAddressAndPort( addr, port );
+    GstElement* udpsink = gst_element_factory_make( "udpsink", sinkName.toStdString().c_str() );
     if( !udpsink ){
-        LOG4CXX_ERROR( logger, "Unable to get udpsink from pipeline" );
-        return "";
+        LOG4CXX_ERROR( logger, "Can't create UDP sink??" );
+        return;
     }
 
-    char* ipAddr = nullptr;
-    g_object_get( G_OBJECT(udpsink), "host", &ipAddr, nullptr );
-    return QString::fromUtf8( ipAddr );
+    std::string hostName = addr.toString().toStdString();
+    g_object_set( udpsink, "sync", false, nullptr );
+    g_object_set( udpsink, "host", hostName.c_str(), nullptr );
+    g_object_set( udpsink, "port", port, nullptr );
+
+    GstElement* tee = gst_bin_get_by_name( GST_BIN( m_pipeline ), "tee" );
+    if( !tee ){
+        LOG4CXX_ERROR( logger, "Can't get tee??" );
+    }
+
+    if( !gst_bin_add( GST_BIN(m_pipeline), udpsink ) ){
+        LOG4CXX_ERROR( logger, "Can't add to bin" );
+    }
+
+    if( !gst_element_link( tee, udpsink ) ){
+        LOG4CXX_ERROR( logger, "Can't link tee" );
+    }
+
+    gst_element_set_state( udpsink, GST_STATE_PLAYING );
 }
 
-int VideoSender::port() const{
-    GstElement* udpsink = gst_bin_get_by_name( GST_BIN( m_pipeline ), "udpsink" );
+void VideoSender::removeEndpoint( QHostAddress addr, int port ){
+    LOG4CXX_DEBUG( logger, "Stopping video to " << addr.toString().toStdString() << ":" << port );
+    QString sinkName = nameForAddressAndPort( addr, port );
+    GstElement* udpsink = gst_bin_get_by_name( GST_BIN(m_pipeline), sinkName.toStdString().c_str() );
     if( !udpsink ){
-        LOG4CXX_ERROR( logger, "Unable to get udpsink from pipeline" );
-        return 0;
+        LOG4CXX_ERROR( logger, "Can't find the UDP sink to this address" );
+        return;
     }
 
-    int port;
-    g_object_get( G_OBJECT(udpsink), "port", &port, nullptr );
-    return port;
+    GstStateChangeReturn ret = gst_element_set_state( udpsink, GST_STATE_PAUSED );
+    if( ret != GST_STATE_CHANGE_SUCCESS ){
+        LOG4CXX_ERROR( logger, "Can't set state to paused" );
+    }
+
+    GstElement* tee = gst_bin_get_by_name( GST_BIN( m_pipeline ), "tee" );
+    if( !tee ){
+    }
+    gst_element_unlink( tee, udpsink );
+    gst_bin_remove( GST_BIN( m_pipeline ), udpsink );
+}
+
+QString VideoSender::nameForAddressAndPort( QHostAddress addr, int port ){
+    return addr.toString() + ":" + port;
 }

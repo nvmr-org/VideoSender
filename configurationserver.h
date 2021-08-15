@@ -3,7 +3,9 @@
 
 #include <QObject>
 #include <QtWebSockets/QtWebSockets>
-#include <QList>
+#include <QVector>
+
+#include "clientconnection.h"
 
 class VideoSender;
 
@@ -20,13 +22,13 @@ Q_SIGNALS:
 public Q_SLOTS:
 private Q_SLOTS:
     void onNewConnection();
-    void processBinaryMessage(const QByteArray& message);
-    void socketDisconnected();
+    void disconnectAndRestart();
+    void clientDisconnected();
 
 private:
     QWebSocketServer* m_server;
     VideoSender* m_videoSender;
-    QList<QWebSocket*> m_clients;
+    QVector<std::shared_ptr<ClientConnection>> m_clients;
 };
 
 #endif // CONFIGURATIONSERVER_H

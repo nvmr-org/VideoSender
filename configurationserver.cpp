@@ -31,85 +31,30 @@ void ConfigurationServer::onNewConnection()
     QWebSocket *pSocket = m_server->nextPendingConnection();
 
     LOG4CXX_DEBUG( logger, "New incoming connection from " << pSocket->peerAddress().toString().toStdString() );
-    connect(pSocket, &QWebSocket::binaryMessageReceived, this, &ConfigurationServer::processBinaryMessage);
-    connect(pSocket, &QWebSocket::disconnected, this, &ConfigurationServer::socketDisconnected);
 
-    m_clients.push_back( pSocket );
+    std::shared_ptr<ClientConnection> clientConn( new ClientConnection(pSocket, m_videoSender) );
+
+    connect( clientConn.get(), &ClientConnection::clientDisconnected,
+             this, &ConfigurationServer::clientDisconnected );
+    connect( clientConn.get(), &ClientConnection::restartRequested,
+             this, &ConfigurationServer::disconnectAndRestart );
+
+    m_clients.push_back( clientConn );
 }
 
-void ConfigurationServer::processBinaryMessage( const QByteArray& message ){
-    QJsonDocument doc = QJsonDocument::fromJson( message );
-    if( doc.isNull() ){
-        LOG4CXX_ERROR( logger, "Docment is null!" );
-        return;
+void ConfigurationServer::disconnectAndRestart(){
+    for( std::shared_ptr<ClientConnection> client : m_clients ){
+        client->disconnectConnection();
     }
-
-    if( logger->isDebugEnabled() ){
-        std::string debugDoc = doc.toJson().toStdString();
-        LOG4CXX_DEBUG( logger, "Got document: " << debugDoc );
-    }
-
-    QSettings settings;
-
-    VideoSenderMessage msg( doc.object() );
-
-    if( msg.command() == "query" ){
-        // Send the data back
-        for( QWebSocket* socket : m_clients ){
-            VideoSenderMessage retmsg;
-
-            QSettings settings;
-            VideoSenderConfiguration& config = retmsg.mutuable_configuration();
-            config.setUuid( settings.value( "device-uuid" ).toUuid().toString( QUuid::StringFormat::WithoutBraces ) );
-            VideoSettings& vidSettings = config.mutable_videoSettings();
-            NetworkSettings& netSettings = config.mutable_networkSettings();
-
-            vidSettings.setWidth( m_videoSender->videoWidth() );
-            vidSettings.setHeight( m_videoSender->videoHeight() );
-            vidSettings.setConfigInterval( m_videoSender->configInterval() );
-            vidSettings.setFramerate( m_videoSender->framerate() );
-            vidSettings.setPt( m_videoSender->pt() );
-            vidSettings.setId( settings.value( "video/id", -1 ).toInt() );
-            vidSettings.setName( settings.value( "video/name" ).toString() );
-
-            netSettings.setUdpHost( m_videoSender->ipAddr() );
-            netSettings.setUdpPort( m_videoSender->port() );
-            netSettings.setBroadcast( settings.value( "network/broadcast" ).toBool() );
-
-            QJsonDocument doc( retmsg.jsonObj() );
-            socket->sendBinaryMessage( doc.toJson() );
-        }
-    }else if( msg.command() == "restart" ){
-        for( QWebSocket* socket : m_clients ){
-            socket->close();
-        }
-        QTimer::singleShot( 100, [](){
-            QCoreApplication::instance()->exit( 2 );
-        });
-    }else if( msg.command() == "set" ){
-        QSettings settings;
-
-        settings.setValue( "video/width", msg.configuration().videoSettings().width() );
-        settings.setValue( "video/height", msg.configuration().videoSettings().height() );
-        settings.setValue( "video/config-interval", msg.configuration().videoSettings().configInterval() );
-        settings.setValue( "video/framerate", msg.configuration().videoSettings().framerate() );
-        settings.setValue( "video/pt", msg.configuration().videoSettings().pt() );
-        settings.setValue( "video/id", msg.configuration().videoSettings().id() );
-        settings.setValue( "video/name", msg.configuration().videoSettings().name() );
-        settings.setValue( "network/udp-host", msg.configuration().networkSettings().udpHost() );
-        settings.setValue( "network/udp-port", msg.configuration().networkSettings().udpPort() );
-        settings.setValue( "network/broadcast", msg.configuration().networkSettings().broadcast() );
-    }
-
-    //VideoSettings vidset = msg.configuration().videoSettings();
-
+    QTimer::singleShot( 100, [](){
+        QCoreApplication::instance()->exit( 2 );
+    });
 }
 
-void ConfigurationServer::socketDisconnected(){
-    QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
-
-    if (pClient) {
-        m_clients.removeAll(pClient);
-        pClient->deleteLater();
-    }
+void ConfigurationServer::clientDisconnected(){
+    std::remove_if( std::begin(m_clients),
+                    std::end(m_clients),
+                    [](std::shared_ptr<ClientConnection> conn){
+        return !conn->isConnected();
+    });
 }

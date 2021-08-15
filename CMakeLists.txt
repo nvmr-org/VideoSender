@@ -25,6 +25,7 @@ set( headers
     avahi-dbus/org_freedesktop_Avahi_Server2Proxy.h
     avahi-dbus/org_freedesktop_Avahi_EntryGroupProxy.h
     avahi.h
+    clientconnection.h
 )
 
 set( sources
@@ -37,6 +38,7 @@ set( sources
     avahi-dbus/org_freedesktop_Avahi_Server2Proxy.cpp
     avahi-dbus/org_freedesktop_Avahi_EntryGroupProxy.cpp
     avahi.cpp
+    clientconnection.cpp
 )
 
 include(FindPkgConfig)
