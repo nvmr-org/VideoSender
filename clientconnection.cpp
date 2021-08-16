@@ -109,3 +109,7 @@ void ClientConnection::stopSendingVideo(){
     m_isSendingVideo = false;
     m_videoSender->removeEndpoint( m_socket->peerAddress(), m_sendingPort );
 }
+
+QHostAddress ClientConnection::peerAddress(){
+    return m_socket->peerAddress();
+}

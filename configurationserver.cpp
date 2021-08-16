@@ -32,6 +32,21 @@ void ConfigurationServer::onNewConnection()
 
     LOG4CXX_DEBUG( logger, "New incoming connection from " << pSocket->peerAddress().toString().toStdString() );
 
+    bool alreadyThere = false;
+    for( std::shared_ptr<ClientConnection> client : m_clients ){
+        if( client->peerAddress() == pSocket->peerAddress() ){
+            alreadyThere = true;
+            break;
+        }
+    }
+
+    if( alreadyThere ){
+        LOG4CXX_DEBUG( logger, "Ignoring new connection: it already exists" );
+        pSocket->close();
+        pSocket->deleteLater();
+        return;
+    }
+
     std::shared_ptr<ClientConnection> clientConn( new ClientConnection(pSocket, m_videoSender) );
 
     connect( clientConn.get(), &ClientConnection::clientDisconnected,

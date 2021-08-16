@@ -16,6 +16,7 @@ public:
 
     bool isConnected();
     void disconnectConnection();
+    QHostAddress peerAddress();
 
 Q_SIGNALS:
     void clientDisconnected();
