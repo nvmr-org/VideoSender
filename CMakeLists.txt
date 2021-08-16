@@ -69,3 +69,6 @@ target_include_directories( NVMRVideoSender PRIVATE
 install( TARGETS NVMRVideoSender
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+install( FILES videosender.service
+    DESTINATION /lib/systemd/system
+)
