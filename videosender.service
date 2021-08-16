@@ -8,6 +8,6 @@ WantedBy=multi-user.target
 [Service]
 Type=simple
 ExecStartPre=/bin/sleep 10
-ExecStart=/usr/local/bin/NVMRVideoSender
+ExecStart=/usr/bin/NVMRVideoSender
 Restart=always
 User=pi
