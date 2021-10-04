@@ -1,6 +1,7 @@
 #include <log4cxx/logger.h>
 
 #include <QSettings>
+#include <QTimer>
 
 #include "videosender.h"
 
@@ -212,6 +213,10 @@ void VideoSender::removeEndpoint( QHostAddress addr, int port ){
     GstStateChangeReturn ret = gst_element_set_state( udpsink, GST_STATE_PAUSED );
     if( ret != GST_STATE_CHANGE_SUCCESS ){
         LOG4CXX_ERROR( logger, "Can't set state to paused" );
+        QTimer::singleShot( 30, [this,addr,port](){
+            this->removeEndpoint(addr,port);
+        });
+        return;
     }
 
     GstElement* tee = gst_bin_get_by_name( GST_BIN( m_pipeline ), "tee" );
