@@ -47,6 +47,7 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
     bool error = false;
     int configInterval;
     int pt;
+    int flipDirection;
 
     {
         QSettings settings;
@@ -55,6 +56,7 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
         configInterval = settings.value( "video/config-interval", 1 ).toInt();
         m_framerate = settings.value( "video/framerate", 24 ).toInt();
         pt = settings.value( "video/pt", 96 ).toInt();
+        flipDirection = settings.value( "video/flip", 0 ).toInt();
     }
 
     GstElement* v4l2Src = gst_element_factory_make( "v4l2src", "v4l2src" );
@@ -67,6 +69,12 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
         LOG4CXX_ERROR( logger, "Unable to create capsfilter" );
         error = true;
     }
+    GstElement* videoFlipper = gst_element_factory_make( "videoflip", nullptr );
+    if( !videoFlipper ){
+        LOG4CXX_ERROR( logger, "Unable to create videoFlipper" );
+        error = true;
+    }
+
     GstElement* rtph264pay = gst_element_factory_make( "rtph264pay", "rtph264pay" );
     if( !rtph264pay ){
         LOG4CXX_ERROR( logger, "Unable to create rtph264pay" );
@@ -91,9 +99,10 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
 
     g_object_set( rtph264pay, "config-interval", configInterval, nullptr );
     g_object_set( rtph264pay, "pt", pt, nullptr );
+    g_object_set( videoFlipper, "video-direction", flipDirection, nullptr );
 
-    gst_bin_add_many(GST_BIN (m_pipeline), v4l2Src, capsfilter, rtph264pay, tee, fakesink, nullptr);
-    gst_element_link_many( v4l2Src, capsfilter, rtph264pay, tee, nullptr);
+    gst_bin_add_many(GST_BIN (m_pipeline), v4l2Src, capsfilter, videoFlipper, rtph264pay, tee, fakesink, nullptr);
+    gst_element_link_many( v4l2Src, capsfilter, videoFlipper, rtph264pay, tee, nullptr);
     gst_element_link_many( tee, fakesink, nullptr );
 
     LOG4CXX_DEBUG( logger, "framerate: " << m_framerate << " width: " << m_width << " height: " << m_height );
@@ -212,8 +221,8 @@ void VideoSender::removeEndpoint( QHostAddress addr, int port ){
 
     GstStateChangeReturn ret = gst_element_set_state( udpsink, GST_STATE_PAUSED );
     if( ret != GST_STATE_CHANGE_SUCCESS ){
-        LOG4CXX_ERROR( logger, "Can't set state to paused" );
-        QTimer::singleShot( 30, [this,addr,port](){
+        LOG4CXX_ERROR( logger, "Can't set state to paused: " << ret );
+        QTimer::singleShot( 300, [this,addr,port](){
             this->removeEndpoint(addr,port);
         });
         return;
