@@ -69,12 +69,6 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
         LOG4CXX_ERROR( logger, "Unable to create capsfilter" );
         error = true;
     }
-    GstElement* videoFlipper = gst_element_factory_make( "videoflip", nullptr );
-    if( !videoFlipper ){
-        LOG4CXX_ERROR( logger, "Unable to create videoFlipper" );
-        error = true;
-    }
-
     GstElement* rtph264pay = gst_element_factory_make( "rtph264pay", "rtph264pay" );
     if( !rtph264pay ){
         LOG4CXX_ERROR( logger, "Unable to create rtph264pay" );
@@ -99,10 +93,9 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
 
     g_object_set( rtph264pay, "config-interval", configInterval, nullptr );
     g_object_set( rtph264pay, "pt", pt, nullptr );
-    g_object_set( videoFlipper, "video-direction", flipDirection, nullptr );
 
-    gst_bin_add_many(GST_BIN (m_pipeline), v4l2Src, capsfilter, videoFlipper, rtph264pay, tee, fakesink, nullptr);
-    gst_element_link_many( v4l2Src, capsfilter, videoFlipper, rtph264pay, tee, nullptr);
+    gst_bin_add_many(GST_BIN (m_pipeline), v4l2Src, capsfilter, rtph264pay, tee, fakesink, nullptr);
+    gst_element_link_many( v4l2Src, capsfilter, rtph264pay, tee, nullptr);
     gst_element_link_many( tee, fakesink, nullptr );
 
     LOG4CXX_DEBUG( logger, "framerate: " << m_framerate << " width: " << m_width << " height: " << m_height );
