@@ -65,6 +65,7 @@ void ClientConnection::processBinaryMessage(const QByteArray& message){
         vidSettings.setPt( m_videoSender->pt() );
         vidSettings.setId( settings.value( "video/id", -1 ).toInt() );
         vidSettings.setName( settings.value( "video/name" ).toString() );
+        vidSettings.setRotation( settings.value( "video/rotation", 0 ).toInt() );
 
 //        netSettings.setUdpHost( m_videoSender->ipAddr() );
 //        netSettings.setUdpPort( m_videoSender->port() );
