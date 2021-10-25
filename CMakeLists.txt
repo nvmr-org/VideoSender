@@ -64,9 +64,20 @@ target_include_directories( NVMRVideoSender PRIVATE
 )
 
 #
+# RTSP helper application
+#
+add_executable( NVMRVideoSenderRTSPHelper video-sender-rtsp-helper.c )
+target_link_libraries( NVMRVideoSenderRTSPHelper
+    ${gstreamer_LIBRARIES}
+)
+target_include_directories( NVMRVideoSenderRTSPHelper PRIVATE
+    ${gstreamer_INCLUDE_DIRS}
+)
+
+#
 # install information
 #
-install( TARGETS NVMRVideoSender
+install( TARGETS NVMRVideoSender NVMRVideoSenderRTSPHelper
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 install( FILES videosender.service

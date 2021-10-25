@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QHostAddress>
+#include <QProcess>
 #include <gst/gst.h>
 #include <gst/rtsp-server/rtsp-server.h>
 
@@ -44,6 +45,7 @@ private:
     GstRTSPServer *m_server;
     GstRTSPMountPoints *m_mounts;
     GstRTSPMediaFactory *m_factory;
+    QProcess m_rtspProcess;
 
     int m_width;
     int m_height;
