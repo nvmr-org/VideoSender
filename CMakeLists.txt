@@ -42,7 +42,7 @@ set( sources
 )
 
 include(FindPkgConfig)
-pkg_check_modules( gstreamer REQUIRED gstreamer-1.0 )
+pkg_check_modules( gstreamer REQUIRED gstreamer-rtsp-server-1.0 )
 pkg_check_modules( log4cxx REQUIRED liblog4cxx )
 pkg_check_modules( nvmr-json REQUIRED nvmr-json )
 pkg_check_modules( dbus-cxx REQUIRED dbus-cxx-qt-2.0 )

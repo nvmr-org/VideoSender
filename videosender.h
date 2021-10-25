@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QHostAddress>
 #include <gst/gst.h>
+#include <gst/rtsp-server/rtsp-server.h>
 
 class VideoSender : public QObject
 {
@@ -31,9 +32,18 @@ private:
     void configureCaps();
     void configureBroadcast();
     QString nameForAddressAndPort( QHostAddress addr, int port );
+    void setupRTSPServer( GstElement* tee  );
+    static void media_configure_cb (GstRTSPMediaFactory * factory,
+                                    GstRTSPMedia * media,
+                                    gpointer user_data);
+    void media_configure(GstRTSPMediaFactory * factory,
+                         GstRTSPMedia * media);
 
 private:
     GstElement* m_pipeline;
+    GstRTSPServer *m_server;
+    GstRTSPMountPoints *m_mounts;
+    GstRTSPMediaFactory *m_factory;
 
     int m_width;
     int m_height;
