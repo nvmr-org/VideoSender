@@ -39,6 +39,7 @@ private:
                                     gpointer user_data);
     void media_configure(GstRTSPMediaFactory * factory,
                          GstRTSPMedia * media);
+    void configureRotation( GstElement* v4l2Src );
 
 private:
     GstElement* m_pipeline;

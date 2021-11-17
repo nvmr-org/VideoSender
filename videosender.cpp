@@ -4,6 +4,7 @@
 #include <QTimer>
 
 #include <gst/rtsp-server/rtsp-server.h>
+#include <gst/video/videoorientation.h>
 
 #include "videosender.h"
 
@@ -92,6 +93,8 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
     if( error ){
         return;
     }
+
+    configureRotation( v4l2Src );
 
     g_object_set( rtph264pay, "config-interval", configInterval, nullptr );
     g_object_set( rtph264pay, "pt", pt, nullptr );
@@ -346,4 +349,23 @@ void VideoSender::media_configure(GstRTSPMediaFactory * factory,
 //    gst_object_unref (udpsrc);
 //    gst_object_unref (element);
 
+}
+
+void VideoSender::configureRotation(GstElement *v4l2Src){
+    QSettings settings;
+    int rotation = settings.value( "video/rotation", 0 ).toInt();
+
+    GstStructure * structure = nullptr;
+
+    if( rotation == 2 ){
+        structure = gst_structure_from_string ( "ci,rotate=180", nullptr);
+    }else if( rotation == 1 ){
+        structure = gst_structure_from_string ( "ci,rotate=90", nullptr);
+    }else if( rotation == 3 ){
+        structure = gst_structure_from_string ( "ci,rotate=270", nullptr);
+    }
+
+    g_object_set( v4l2Src, "extra-controls", structure, nullptr );
+
+    gst_structure_free( structure );
 }
