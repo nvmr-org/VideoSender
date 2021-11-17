@@ -1,6 +1,8 @@
 #include "avahi.h"
 
 #include <QSettings>
+#include <QHostAddress>
+#include <QNetworkInterface>
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger( "org.nvmr.AvahiControl" );
@@ -29,6 +31,18 @@ void AvahiControl::registerWithAvahi(){
     std::vector<std::vector<uint8_t>> txtData;
     QSettings settings;
     txtData.push_back( qstringToVector( "videoname=" + settings.value( "video/name" ).toString() ) );
+    // TODO this is simply hardcoded to ipv4, and assumes 8554.  It should probably be less hardcoded,
+    // perhaps by passing the options to the rtsp-helper program
+    QList<QHostAddress> list = QNetworkInterface::allAddresses();
+    for( QHostAddress addr : list ){
+        if( addr.isBroadcast() || addr.isLoopback() || addr.isNull() ){
+            continue;
+        }
+
+        if( addr.protocol() == QAbstractSocket::IPv4Protocol ){
+            txtData.push_back( qstringToVector( "rtsp=rtsp://" + addr.toString() + ":8554/rpi-video" ) );
+        }
+    }
     std::string serviceName( "VideoSender-" );
     serviceName.append( m_uuid.toString( QUuid::StringFormat::WithoutBraces ).toStdString() );
     m_entryProxy->getorg_freedesktop_Avahi_EntryGroupInterface()
