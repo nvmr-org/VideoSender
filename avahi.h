@@ -24,6 +24,9 @@ public Q_SLOTS:
     void stateChanged( int state, std::string error );
 
 private:
+    std::vector<uint8_t> qstringToVector( QString str );
+
+private:
     std::shared_ptr<DBus::Connection> m_conn;
     std::shared_ptr<DBus::Dispatcher> m_dispatcher;
     std::shared_ptr<Avahi::ServerProxy> m_avahiServer;

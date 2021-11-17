@@ -1,5 +1,6 @@
 #include "avahi.h"
 
+#include <QSettings>
 #include <log4cxx/logger.h>
 
 static log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger( "org.nvmr.AvahiControl" );
@@ -26,6 +27,8 @@ void AvahiControl::registerWithAvahi(){
             ->connect( sigc::mem_fun( *this, &AvahiControl::stateChanged ) );
 
     std::vector<std::vector<uint8_t>> txtData;
+    QSettings settings;
+    txtData.push_back( qstringToVector( "videoname=" + settings.value( "video/name" ).toString() ) );
     std::string serviceName( "VideoSender-" );
     serviceName.append( m_uuid.toString( QUuid::StringFormat::WithoutBraces ).toStdString() );
     m_entryProxy->getorg_freedesktop_Avahi_EntryGroupInterface()
@@ -41,4 +44,13 @@ void AvahiControl::stateChanged( int state, std::string error ){
 
 void AvahiControl::setUuid(QUuid uuid){
     m_uuid = uuid;
+}
+
+std::vector<uint8_t> AvahiControl::qstringToVector( QString str ){
+    QByteArray ba = str.toLocal8Bit();
+    std::vector<uint8_t> ret;
+
+    std::copy( ba.begin(), ba.end(), std::back_inserter(ret) );
+
+    return ret;
 }
