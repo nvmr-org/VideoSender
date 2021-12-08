@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QUuid>
+#include <QTimer>
 
 #include <dbus-cxx-qt.h>
 
@@ -22,6 +23,7 @@ Q_SIGNALS:
 public Q_SLOTS:
     void registerWithAvahi();
     void stateChanged( int state, std::string error );
+    void updateTxtIfPossible();
 
 private:
     std::vector<uint8_t> qstringToVector( QString str );
@@ -32,6 +34,7 @@ private:
     std::shared_ptr<Avahi::ServerProxy> m_avahiServer;
     std::shared_ptr<Avahi::EntryGroupProxy> m_entryProxy;
     QUuid m_uuid;
+    QTimer m_updateTxtTimer;
 };
 
 #endif // AVAHI_H
