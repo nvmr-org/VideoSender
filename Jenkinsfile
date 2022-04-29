@@ -1,31 +1,10 @@
-node {
-	stage('Clean'){
-			cleanWs()
-	}
-	stage('Checkout'){
-			fileOperations([folderCreateOperation('source')])
-			dir('source'){
-				def scmVars = checkout scm
-				env.GIT_COMMIT = scmVars.GIT_COMMIT
-			}
-	}
-	stage("Build"){
-		def repoHook="26be5ef3-dc1e-4b05-9d48-bc01c56ba708"
+@Library('rm5248-jenkins-scripts@master') _
 
-		configFileProvider([configFile(fileId: "${repoHook}", targetLocation: 'hookdir/D21-repo-hook')]){
-		debianPbuilder additionalBuildResults: '', 
-			architecture: 'armhf', 
-			components: '', 
-			distribution: 'buster', 
-			keyring: '', 
-			mirrorSite: 'http://deb.debian.org/debian/', 
-			pristineTarName: ''
-		}
-	} //stage
+// Build ARMHF for rpi
+buildNVMRDebPkg( "armhf", "buster" )
 
-	stage("Add to repo if master"){
-		if( env.BRANCH_NAME == "master" ){
-			aptlyPublish includeSource: true, removeOldPackages: true, repositoryName: "nightly-nvmr"
-		}
-	}
-}
+// build ARM64 for the jetson
+buildNVMRDebPkg( "arm64", "buster" )
+
+// build AMD64 for standard debian(latest release)
+buildNVMRDebPkg( "amd64", "bullseye" )
