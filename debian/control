@@ -3,6 +3,7 @@ Section: unknown
 Priority: optional
 Maintainer: Robert Middleton <robert.middleton@rm5248.com>
 Build-Depends: debhelper (>= 11),
+               cmake,
                libavahi-client-dev,
                libgstreamer1.0-dev,
                liblog4cxx-dev,
