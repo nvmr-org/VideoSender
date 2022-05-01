@@ -19,11 +19,6 @@ add_compile_definitions(QT_NO_KEYWORDS)
 
 include(GNUInstallDirs)
 
-if( CMAKE_CROSSCOMPILING )
-set(QT_MOC_EXECUTABLE /usr/bin/moc)
-add_executable(Qt5::moc IMPORTED)
-set_property(TARGET Qt5::moc PROPERTY IMPORTED_LOCATION ${QT_MOC_EXECUTABLE})
-endif( CMAKE_CROSSCOMPILING )
 find_package(Qt5 COMPONENTS Core WebSockets REQUIRED)
 
 set( headers
