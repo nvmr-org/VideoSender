@@ -3,6 +3,13 @@ project(NVMRVideoSender VERSION 1.0.0)
 
 set( CMAKE_CXX_STANDARD 17 )
 
+include(FeatureSummary)
+find_package(ECM 5.54.0  NO_MODULE)
+set_package_properties(ECM PROPERTIES TYPE REQUIRED DESCRIPTION "Extra CMake Modules." URL "https://commits.kde.org/extra-cmake-modules")
+feature_summary(WHAT REQUIRED_PACKAGES_NOT_FOUND FATAL_ON_MISSING_REQUIRED_PACKAGES)
+
+set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
+
 # need KDEInstallDirs for qmake/moc to work correctly
 include(KDEInstallDirs)
 set(CMAKE_AUTOMOC ON)
