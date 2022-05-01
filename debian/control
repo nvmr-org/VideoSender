@@ -5,6 +5,7 @@ Maintainer: Robert Middleton <robert.middleton@rm5248.com>
 Build-Depends: debhelper (>= 11),
                cmake,
                dbus-cxx-qt-dev,
+               extra-cmake-modules,
                libavahi-client-dev,
                libgstreamer1.0-dev,
                libgstrtspserver-1.0-dev,
