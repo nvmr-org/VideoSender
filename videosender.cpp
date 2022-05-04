@@ -363,6 +363,8 @@ void VideoSender::configureRotation(GstElement *v4l2Src){
         structure = gst_structure_from_string ( "ci,rotate=90", nullptr);
     }else if( rotation == 3 ){
         structure = gst_structure_from_string ( "ci,rotate=270", nullptr);
+    }else if( rotation == 0 ){
+        structure = gst_structure_from_string ( "ci,rotate=0", nullptr);
     }
 
     g_object_set( v4l2Src, "extra-controls", structure, nullptr );
