@@ -121,11 +121,16 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
     addEndpoint( QHostAddress::LocalHost, 8554 );
 
     m_rtspProcess.setProgram( "NVMRVideoSenderRTSPHelper" );
+    QString args = QString("udpsrc address=127.0.0.1 port=8554 ! "
+                        "application/x-rtp,width=%1,height=%2 ! "
+                        "rtph264depay ! "
+                        "rtph264pay pt=%3 config-interval=%4 name=pay0")
+            .arg(m_width)
+            .arg(m_height)
+            .arg(pt)
+            .arg(configInterval);
     m_rtspProcess.setArguments( QStringList() <<
-                                "udpsrc address=127.0.0.1 port=8554 ! "
-                                "application/x-rtp,width=1280,height=720 ! "
-                                "rtph264depay ! "
-                                "rtph264pay pt=96 config-interval=1 name=pay0");
+                                args );
     m_rtspProcess.start();
 }
 
