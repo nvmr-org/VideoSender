@@ -9,6 +9,7 @@
 #include "videosender.h"
 
 static log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger( "org.nvmr.VideoSender" );
+static log4cxx::LoggerPtr logger_subprocess = log4cxx::Logger::getLogger( "org.nvmr.VideoSender.subprocess" );
 
 static gboolean
 my_bus_callback (GstBus * bus, GstMessage * message, gpointer data)
@@ -132,6 +133,11 @@ VideoSender::VideoSender(QObject *parent) : QObject(parent)
     m_rtspProcess.setArguments( QStringList() <<
                                 args );
     m_rtspProcess.start();
+
+    connect( &m_rtspProcess, &QProcess::readyReadStandardError,
+             this, &VideoSender::subprocessStdErr );
+    connect( &m_rtspProcess, &QProcess::readyReadStandardOutput,
+             this, &VideoSender::subprocessStdOut );
 }
 
 VideoSender::~VideoSender(){
@@ -375,4 +381,16 @@ void VideoSender::configureRotation(GstElement *v4l2Src){
     g_object_set( v4l2Src, "extra-controls", structure, nullptr );
 
     gst_structure_free( structure );
+}
+
+void VideoSender::subprocessStdErr(){
+    QString subprocessError = m_rtspProcess.readAllStandardError();
+
+    LOG4CXX_ERROR( logger_subprocess, subprocessError.toStdString() );
+}
+
+void VideoSender::subprocessStdOut(){
+    QString subprocessOut = m_rtspProcess.readAllStandardOutput();
+
+    LOG4CXX_INFO( logger_subprocess, subprocessOut.toStdString() );
 }

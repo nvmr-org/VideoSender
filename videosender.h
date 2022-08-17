@@ -40,6 +40,8 @@ private:
     void media_configure(GstRTSPMediaFactory * factory,
                          GstRTSPMedia * media);
     void configureRotation( GstElement* v4l2Src );
+    void subprocessStdErr();
+    void subprocessStdOut();
 
 private:
     GstElement* m_pipeline;
